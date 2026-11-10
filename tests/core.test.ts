@@ -72,7 +72,7 @@ describe('input', () => {
     i.pointerSet(2, 'brake');
     i.pointerSet(3, 'leanBack');
     i.pointerSet(4, 'leanForward');
-    expect(i.state).toEqual({ throttle: true, brake: true, leanBack: true, leanForward: true });
+    expect(i.state).toEqual({ throttle: true, brake: true, leanBack: true, leanForward: true, eject: false });
     i.pointerUp(3);
     expect(i.state.leanBack).toBe(false);
     expect(i.state.throttle).toBe(true);

@@ -7,16 +7,22 @@ export const CAT = {
   GORE: 0x0010,
   TRIGGER: 0x0020,
   HAZARD: 0x0040,
+  /** Loose objects and bystanders. They touch the world, the bike and the rider. */
+  PROP: 0x0080,
+  /** Tripwires for explosives. Anything solid sets them off. */
+  FUSE: 0x0100,
 } as const;
 
 export const MASK = {
-  TERRAIN: CAT.BIKE | CAT.RIDER | CAT.GORE,
-  MACHINE: CAT.BIKE | CAT.RIDER,
-  BIKE: CAT.TERRAIN | CAT.MACHINE | CAT.TRIGGER | CAT.HAZARD,
-  RIDER: CAT.TERRAIN | CAT.MACHINE | CAT.HAZARD,
+  TERRAIN: CAT.BIKE | CAT.RIDER | CAT.GORE | CAT.PROP,
+  MACHINE: CAT.BIKE | CAT.RIDER | CAT.PROP,
+  BIKE: CAT.TERRAIN | CAT.MACHINE | CAT.TRIGGER | CAT.HAZARD | CAT.PROP | CAT.FUSE,
+  RIDER: CAT.TERRAIN | CAT.MACHINE | CAT.HAZARD | CAT.PROP | CAT.FUSE,
   GORE: CAT.TERRAIN,
   TRIGGER: CAT.BIKE,
   HAZARD: CAT.BIKE | CAT.RIDER,
+  PROP: CAT.TERRAIN | CAT.MACHINE | CAT.BIKE | CAT.RIDER | CAT.PROP | CAT.FUSE,
+  FUSE: CAT.BIKE | CAT.RIDER | CAT.PROP,
 } as const;
 
 export type BodyRegion = 'head' | 'torso' | 'limb';
@@ -36,10 +42,12 @@ export type RiderPartId =
 /** Stored on every fixture so contact handling never guesses what it touched. */
 export type FixtureTag =
   | { k: 'terrain' }
-  | { k: 'machine'; id: string; conveyor?: () => number; crush?: boolean }
+  | { k: 'machine'; id: string; conveyor?: () => number; crush?: boolean; spring?: boolean }
   | { k: 'wheel'; index: number }
   | { k: 'chassis' }
   | { k: 'rider'; part: RiderPartId; region: BodyRegion }
   | { k: 'gore' }
   | { k: 'trigger'; id: string }
-  | { k: 'hazard'; id: string; style: 'cutter' };
+  | { k: 'hazard'; id: string; style: 'cutter' | 'spikes' }
+  | { k: 'prop'; id: string; soft: number }
+  | { k: 'fuse'; id: string };

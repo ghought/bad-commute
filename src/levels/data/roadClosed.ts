@@ -1,4 +1,5 @@
 import { level, pit } from '../authoring';
+import { npc, props, stack } from '../dressing';
 import type { LevelData } from '../schema';
 
 const D = 'road-closed' as const;
@@ -14,16 +15,26 @@ export const ROAD_CLOSED: LevelData[] = [
     finish: { x: 78, y: -1, h: 12 },
     terrain: [{ id: 'road', style: 'asphalt', points: [[-6, WALL], [-6, 0], [16, 0], [22, 1.1], [27, 1.1], [33, 0], [44, 0], [50, 1.7], [51, 1.7], [56, 0], [90, 0], [90, WALL]] }],
     tag: { x: 54.2, y: 3.6 },
+    prefabs: [
+      ...stack('box', 7.6, 0, 2, 3),
+      ...props('cone', [[11.5, 0], [12.8, 0]]),
+      npc(64, 0, 'inspector'),
+      ...props('cooler', [[67.5, 0]]),
+      ...props('chair', [[69, 0]]),
+      npc(71.5, 0, 'intern'),
+      ...props('ball', [[73.5, 0]]),
+      ...props('bin', [[75.5, 0]]),
+    ],
     decor: [
       { kind: 'sign', x: 8, y: 0, text: 'ROAD CLOSED', layer: 'back' },
-      { kind: 'cone', x: 12, y: 0 }, { kind: 'cone', x: 14, y: 0 },
-      { kind: 'lamp', x: 36, y: 0 }, { kind: 'barrier', x: 62, y: 0 },
-      { kind: 'cone', x: 67, y: 0 }, { kind: 'terminal', x: 84, y: 0 },
+      { kind: 'lamp', x: 31, y: 0 }, { kind: 'barrier', x: 58, y: 0, layer: 'back' },
+      { kind: 'terminal', x: 88.5, y: 0 },
     ],
     hints: [
-      { x0: -6, x1: 13, keyboard: 'W or Up: throttle', touch: 'Hold GO to ride' },
-      { x0: 13, x1: 36, keyboard: 'A or Left leans back. D or Right leans forward.', touch: 'BACK and FWD shift your weight' },
-      { x0: 62, x1: 80, keyboard: 'S or Down: brake', touch: 'BRAKE slows you. Hold it at rest to reverse.' },
+      { x0: -6, x1: 13, keyboard: 'W or Up: throttle. Everything in the road is there to be hit.', touch: 'Hold GO to ride. Everything in the road is there to be hit.' },
+      { x0: 13, x1: 30, keyboard: 'A or Left leans back. D or Right leans forward.', touch: 'BACK and FWD shift your weight' },
+      { x0: 30, x1: 58, keyboard: 'Space fires the ejector seat. Any part of you over the finish line counts.', touch: 'BAIL fires the ejector seat. Any part of you over the finish line counts.' },
+      { x0: 58, x1: 80, keyboard: 'S or Down: brake. Or do not.', touch: 'BRAKE slows you. Or do not.' },
     ],
     medals: { gold: 6, silver: 8, bronze: 11.5 },
     expectedSeconds: [15, 30],

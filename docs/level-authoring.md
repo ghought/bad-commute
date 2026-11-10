@@ -36,6 +36,30 @@ Set `crushFloor` on any lift that descends onto a road, otherwise it will push t
 
 `targets` link prefabs by id. Signals deliver on the next simulation step.
 
+## Toys
+
+These came in the second pass. All are prefabs, validated like the rest.
+
+| Type | What it does | Notes |
+| --- | --- | --- |
+| `prop` | A loose object: `box`, `crate`, `cone`, `barrel`, `tnt`, `cooler`, `cart`, `chair`, `bin`, `ball` | Boxes, crates and coolers break. `tnt` explodes on a hit of 5.5 m/s or in another blast. `y` is the floor it stands on |
+| `mine` | Explodes when anything solid touches it | Lethal within about 1.8 m, unseats within 4.4 m |
+| `spring` | A pad that throws whatever lands on it at `power` m/s along its normal | Flush with the floor. Negative `angle` throws forward |
+| `fan` | A column of air, `accel` in m/s² against a gravity of 16 | About 23 hovers the bike a metre or two up. 30 or more throws it |
+| `wrecker` | A wrecking ball on a fixed swing | Route holds read its `cycle`, 0 to 1. The ball is rising towards the near side from about 0.63 |
+| `spikes` | Kills the rider and stops the bike | Bodies that land on it stay there |
+| `npc` | A bystander: `inspector`, `manager` or `intern` | Punted clear by a fast bike |
+
+`src/levels/dressing.ts` has helpers: `props(kind, spots)`, `stack(kind, x, y, cols, rows, taper)` and `npc(x, y, look)`. Its `dress()` adds a set piece to long flat stretches and a welcome party past each finish. Add a level id to `PLAIN` or `NO_PARTY` there to opt out.
+
+Things learned the hard way:
+
+- **Do not put loose props just before a ramp, pad or mine.** They get pushed ahead of the bike. A cone will set off a mine. A barrel will travel 18 m.
+- **Do not put a bystander before mines.** They are punted further than the bike jumps.
+- A prop or bystander stops blocking 1.5 s after its first knock, so a jam is not possible, but a slow bike can still be held up for that long.
+- Set `onFoot: true` on a course that can only be finished off the bike. The verifier then accepts an arrival on foot.
+- Run `node_modules/.bin/tsx` on a throttle-only script before solving: a new player holds throttle and nothing else, and the first course must survive that.
+
 ## Hazard language
 
 Red and black means it can kill you. Amber means hit this. A bright cream edge means you can ride on it. Keep to that.

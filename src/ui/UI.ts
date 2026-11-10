@@ -19,6 +19,16 @@ export interface ResultsView {
   bestBefore: number | null;
   outcome: RunOutcome;
   next: LevelData | null;
+  arrival: 'riding' | 'loose' | 'dead';
+  /** Percentage of the rider that crossed the line. */
+  integrity: number;
+}
+
+function arrivalCopy(arrival: ResultsView['arrival'], integrity: number): [string, string] {
+  if (arrival === 'dead') return ['Arrived. Deceased.', 'Attendance is attendance. Payroll has been informed of the other thing.'];
+  if (arrival === 'loose') return ['Arrived. On foot.', integrity < 100 ? 'The bike and some of you are still in transit.' : 'The bike is still in transit. Nobody asked about it.'];
+  if (integrity < 100) return ['Arrived. Mostly.', 'Please collect the rest of yourself from lost property.'];
+  return ['Arrived.', 'On time, intact, and wearing a tie. Suspicious.'];
 }
 
 type Screen = 'none' | 'notice' | 'title' | 'levels' | 'settings' | 'pause' | 'results';
@@ -155,18 +165,19 @@ export class UI {
       'title',
       `<div class="title-wrap">
         <header class="masthead">
-          <div class="plate">District map 01–03</div>
-          <h1 class="logo">BAD<br>COMMUTE</h1>
-          <p class="tagline">The city works. You might not.</p>
+          <div class="plate">Attendance is mandatory. Arriving in one piece is not.</div>
+          <h1 class="logo">BAD<br><span>COMMUTE</span></h1>
+          <p class="tagline">Get your body to work. Any amount of it counts.</p>
         </header>
         <nav class="menu" aria-label="Main menu">
           <button class="btn primary big" data-act="continue" data-autofocus>${label}</button>
+          <button class="btn hot" data-act="play" data-id="ot-21">Overtime <small>explosives, open now</small></button>
           <button class="btn" data-act="levels">Level select</button>
           <button class="btn" data-act="settings">Settings</button>
         </nav>
         <footer class="fineprint">
           <span class="mature">Mature: graphic violence</span>
-          <span>${done} of 20 shifts complete. Progress stays in this browser.</span>
+          <span>${done} of ${this.game.levelsInOrder().length} shifts complete. Progress stays in this browser.</span>
         </footer>
       </div>`,
     );
@@ -183,7 +194,7 @@ export class UI {
         <header class="bar">
           <button class="btn small" data-act="back-title" aria-label="Back to title">Back</button>
           <h1 class="stamp">Shift schedule</h1>
-          <span class="count">${g.store.completedCount()}/20</span>
+          <span class="count">${g.store.completedCount()}/${g.levelsInOrder().length}</span>
         </header>
         ${this.levelsNote ? `<p class="note" role="status">${esc(this.levelsNote)}</p>` : ''}
         ${strips}
@@ -247,6 +258,7 @@ export class UI {
       ['brake', 'Brake / reverse'],
       ['leanBack', 'Lean back'],
       ['leanForward', 'Lean forward'],
+      ['eject', 'Ejector seat'],
     ];
     const keys = actions
       .map(([action, label]) => {
@@ -330,7 +342,8 @@ export class UI {
   showResults(view: ResultsView) {
     this.touch.setVisible(false);
     this.crashEl.hidden = true;
-    const { level, timeMs, assisted, tag, bestBefore, outcome, next } = view;
+    const { level, timeMs, assisted, tag, bestBefore, outcome, next, arrival, integrity } = view;
+    const [headline, remark] = arrivalCopy(arrival, integrity);
     this.lastResultsNext = next;
     const medal = !assisted && outcome.medal ? `<span class="stamp medal-stamp ${outcome.medal}">${MEDAL_NAME[outcome.medal]}</span>` : `<span class="stamp medal-stamp none">No medal</span>`;
     const best = outcome.bestMs !== null ? formatTime(outcome.bestMs) : '—';
@@ -340,13 +353,15 @@ export class UI {
       'results',
       `<div class="panel results">
         <p class="label">${String(level.order).padStart(2, '0')} · ${esc(level.title)}</p>
-        <h1 class="stamp big">Arrived.</h1>
+        <h1 class="stamp big ${arrival === 'dead' ? 'late' : ''}">${headline}</h1>
+        <p class="remark">${esc(remark)}</p>
         <p class="run-type">${assisted ? 'Assisted run: used a checkpoint, no medal or record' : 'Full run'}</p>
         <dl class="stats">
           <div><dt>Time</dt><dd>${formatTime(timeMs)} ${pb}</dd></div>
           <div><dt>Best</dt><dd>${best}</dd></div>
           <div><dt>Medal</dt><dd>${medal}</dd></div>
           <div><dt>Tag</dt><dd>${tag ? '<span class="tag-yes">Collected</span>' : 'Not collected'}</dd></div>
+          <div class="wide"><dt>Employee delivered</dt><dd><span class="meter"><i style="width:${integrity}%"></i></span> ${integrity}%</dd></div>
         </dl>
         ${unlocks}
         <div class="actions">
@@ -360,11 +375,12 @@ export class UI {
 
   lastResultsNext: LevelData | null = null;
 
-  showCrash(cause: string, canRecover: boolean) {
+  showCrash(cause: string, canRecover: boolean, integrity: number) {
     this.crashEl.hidden = false;
     this.crashEl.innerHTML = `
       <div class="crash-card">
-        <h1 class="stamp">Shift interrupted.</h1>
+        <p class="form-no">Incident report 7-B · employee ${integrity}% present</p>
+        <h1 class="stamp">Did not arrive.</h1>
         <p>${esc(cause)}</p>
         <div class="actions">
           <button class="btn primary" data-act="retry" data-autofocus>${canRecover ? 'Retry from checkpoint' : 'Retry'}<kbd>Enter</kbd></button>

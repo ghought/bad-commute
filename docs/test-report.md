@@ -1,22 +1,24 @@
 # Test report
 
-Date: 2026-11-08. Node 22.13. Chrome (installed, headless) through Playwright 1.65.
+Date: 2026-11-09, after the second pass. Node 22.13. Chrome (installed, headless) through Playwright 1.65.
 
 ## Verified by automation
 
 | Check | Result |
 | --- | --- |
-| Unit and simulation tests (`npm test`) | 95 passed |
-| Campaign validation, 20 levels, 16 route-changing | Passed |
-| Mandatory route on all 20 courses, ridden by a bot pressing only the four actions | Passed |
-| Optional tag reached on all 20 courses | Passed |
+| Unit and simulation tests (`npm test`) | 117 passed |
+| Campaign validation, 24 levels, 16 route-changing | Passed |
+| Mandatory route on all 24 courses, ridden by a bot pressing only the player's actions | Passed. `ot-24` is finished on foot, as designed |
+| Optional tag reached on all 24 courses | Passed |
+| Eject, crawling, arrival on foot and dead, props, mines, pads, fans, wrecking balls, spikes, bystanders | Covered by `tests/toys.test.ts` |
+| Throttle-only play on the first course | Finishes riding, in the simulation |
 | Checkpoint routes on levels 7, 14 and 20 | Passed |
 | Same route replays to the same result | Passed |
 | Sandboxed cross-origin iframe, subpath, whole bridge protocol (`npm run test:embed`) | Passed |
 | Level 1 finished with real keyboard input and real frames, in the production build | Passed |
 | Storage denied, refresh keeps progress, locked deep link, portrait prompt, touch target size | Passed |
-| 100 crash-and-restart cycles in Chrome | Bodies constant (20), audio loops constant (4), effects cleared, restart about 1.2 ms |
-| Production bundle | About 250 KB compressed in total. JavaScript 90 KB |
+| 100 crash-and-restart cycles in Chrome | First pass only: bodies, audio loops and effects stayed constant. **Not re-run** since props and bystanders were added |
+| Production bundle | About 265 KB compressed in total. JavaScript 108 KB |
 | Dev tools absent from the production build | Confirmed |
 
 ## Acceptance criteria
@@ -33,6 +35,12 @@ Date: 2026-11-08. Node 22.13. Chrome (installed, headless) through Playwright 1.
 | AC-08 | Partly | About 1.2 ms in desktop Chrome. Not measured on phones |
 | AC-09 | Automated | "No impossible touch-only maneuvers" holds because the bot uses the same four actions. Real thumbs are untested |
 | AC-10 to AC-16 | Automated | |
+
+## Seen on screen, second pass
+
+Driven frame by frame in Chrome: the new rider and face, eject and paperwork, box stacks bursting, a bystander losing his head, crawling to a finish, the results and incident cards, the title screen and level select, and Overtime courses 21 to 24 including the fan, a wrecking ball, a mine field and crawling under the building.
+
+Not seen on screen: spikes, every prop kind, Reduced and Off gore on the new objects, the touch BAIL button, and the phone layout with five buttons.
 
 ## Not verified
 

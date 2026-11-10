@@ -32,3 +32,28 @@
 | Reduced/Off gore: limbs | Off hides a detached limb rather than drawing it attached | A small simplification of how Off looks. Outcomes are unchanged. |
 | Opt-in playtest logs | Not built | Marked optional for launch. |
 | Gamepad | Not built | Post-v1 in the PRD. |
+
+## Second pass, 2026-11-09: making it funnier
+
+The first build was judged decent but not fun or absurd enough for people who like ragdoll crash games. This pass changed core input and the violence, so it is recorded here.
+
+| Change | What and why |
+| --- | --- |
+| **Any torso over the line counts** | A finish is recorded as `riding`, `loose` (alive, off the bike) or `dead`. All three complete the course and can earn a medal. The results screen says which, and what percentage of the rider arrived. This is now the game's joke: attendance is attendance. |
+| **A fifth input: the ejector seat** | Space or X, and a BAIL button on touch. The PRD specified four inputs. It does not start the clock. Off the bike, throttle and brake heave the rider along the ground and the lean keys roll them. |
+| **Death no longer ends the attempt at once** | The world keeps running. A dead body still loses limbs to saws and hard hits. The report appears when the body has lain still for 1.5 s, after 7 s, or at once for a pit or the edge of the map. A living rider lying still with no input for 5 s has given up. |
+| **Knocked off before killed** | Head hits from 5.2 m/s and torso hits from 6.4 m/s unseat a rider. Lethal moved up to 7.4 and 9.4. |
+| **Bystanders can be hit and decapitated** | Inspectors, managers and interns stand on courses and past every finish line. This is more violence than the first build, against people other than the rider. Gore settings apply to them. Decide whether this suits the hub. |
+| **Loose props and explosives** | Boxes, crates, coolers, cones, carts, chairs, bins, balls and barrels are dynamic bodies. Mines and red barrels explode and chain. |
+| **Props and bystanders retire** | 1.5 s after its first knock a prop or bystander stops touching anything but the ground. Without this they piled up at ramp bases and jammed courses. It also keeps the old rule: debris never ends up deciding a route. |
+| **Bystanders are punted just before contact** | A bike faster than 3 m/s throws them clear a fraction early. Without it a front wheel rode up a body and flipped the bike. |
+| **Props never use up a bounce pad** | A cone pushed ahead of the bike was spending the pad's cooldown, and the bike fell in the pit. |
+| **New machines** | Punch pads, fans, wrecking balls and spikes. Fans accelerate every body equally so the bike lifts level. |
+| **A fourth district, Overtime** | Four courses built on the new toys, open from the start so new players reach them at once. The campaign is now 24 courses. `ot-24` can only be finished on foot, and is flagged `onFoot` for the verifier. |
+| **Scenery is added by `dress()`** | Flat stretches get a set piece, and every finish gets a welcome party. It is deterministic and the result is plain data. `lz-11` is left bare because the boxes broke its tag route. |
+| **`PHYSICS_VERSION` is 2** | Old times and ghosts retire from comparison. Completion is kept. |
+| **Camera is closer** | View height 10.4 m, was 11.5, so the rider's face reads. |
+
+Still true: gore settings never reach the simulation, and detached limbs touch only the ground.
+
+Not done in this pass: courses are still short, medals still come from bot times, and none of it has been played by a person.

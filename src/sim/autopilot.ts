@@ -6,7 +6,7 @@ import type { Simulation } from './Simulation';
 
 /**
  * A route is how the verifier proves a course can be ridden. It presses only the
- * same four actions a player has, on the same fixed step.
+ * same actions a player has, on the same fixed step.
  */
 export interface RouteStep {
   /** The step ends once the chassis passes this x. */
@@ -17,6 +17,10 @@ export interface RouteStep {
   air?: number;
   /** Hold a lean on this stretch: 1 back, -1 forward. */
   lean?: number;
+  /** Fire the ejector seat as this stretch begins. */
+  eject?: boolean;
+  /** Off the bike: heave along the ground on this stretch. */
+  flop?: boolean;
   /** At the end of the step, stop and wait for this. */
   hold?: {
     id?: string;
@@ -43,6 +47,8 @@ export function mechanismValue(m: Mechanism): number {
       return r.u as number;
     case 'swing':
       return r.theta as number;
+    case 'wrecker':
+      return r.cycle as number;
     case 'shutter':
       return r.open as number;
     case 'compactor':
@@ -89,6 +95,17 @@ export class Autopilot {
 
     const step = this.route.steps[Math.min(this.index, this.route.steps.length - 1)];
     const target = this.holding ? 0 : step.v;
+
+    if (sim.riderState() !== 'riding') {
+      // Off the bike there is one plan: keep heaving towards the finish.
+      a.throttle = true;
+      return a;
+    }
+    if (step.eject && !this.holding) {
+      a.eject = true;
+      a.throttle = true;
+      return a;
+    }
 
     // Speed along the direction of travel. Platforms under the bike do not count.
     const forward = t.vx * Math.cos(t.angle) + t.vy * Math.sin(t.angle);
@@ -141,6 +158,7 @@ export class Autopilot {
 
 export interface RouteResult {
   status: Simulation['status'];
+  arrival: Simulation['arrival'];
   time: number;
   tag: boolean;
   maxX: number;
@@ -175,5 +193,5 @@ export function runRoute(sim: Simulation, route: Route, maxSeconds = 150): Route
     }
     steps++;
   }
-  return { status: sim.status, time: sim.time, tag: sim.tag, maxX, cause: sim.deathCause, steps, tagDistance, tagNear };
+  return { status: sim.status, arrival: sim.arrival, time: sim.time, tag: sim.tag, maxX, cause: sim.deathCause, steps, tagDistance, tagNear };
 }

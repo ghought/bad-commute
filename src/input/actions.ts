@@ -1,9 +1,11 @@
-/** The four riding actions. Everything downstream sees only these. */
+/** The riding actions. Everything downstream sees only these. */
 export interface ActionState {
   throttle: boolean;
   brake: boolean;
   leanBack: boolean;
   leanForward: boolean;
+  /** The ejector seat. Fires once per press. */
+  eject: boolean;
 }
 
 export const emptyActions = (): ActionState => ({
@@ -11,6 +13,7 @@ export const emptyActions = (): ActionState => ({
   brake: false,
   leanBack: false,
   leanForward: false,
+  eject: false,
 });
 
 export interface VehicleCommand {
@@ -19,6 +22,7 @@ export interface VehicleCommand {
   brake: number;
   /** -1 forward, 0 neutral, +1 back. Opposing leans cancel. */
   lean: number;
+  eject?: number;
 }
 
 export function toCommand(a: ActionState): VehicleCommand {
@@ -27,7 +31,9 @@ export function toCommand(a: ActionState): VehicleCommand {
     throttle: a.throttle && !a.brake ? 1 : 0,
     brake,
     lean: (a.leanBack ? 1 : 0) - (a.leanForward ? 1 : 0),
+    eject: a.eject ? 1 : 0,
   };
 }
 
+/** Riding inputs only: the ejector seat does not start the clock. */
 export const anyAction = (a: ActionState) => a.throttle || a.brake || a.leanBack || a.leanForward;

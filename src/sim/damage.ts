@@ -1,10 +1,11 @@
 import { DAMAGE } from '../config/tuning';
 import type { BodyRegion } from './filters';
 
-export type DamageOutcome = 'none' | 'bruise' | 'sever' | 'lethal' | 'decapitate';
+export type DamageOutcome = 'none' | 'bruise' | 'knock' | 'sever' | 'lethal' | 'decapitate';
 
 /**
- * The whole damage model. Contact speed and body region decide the outcome;
+ * The whole damage model. Contact speed and body region decide the outcome.
+ * 'knock' throws a living rider off the bike without killing them;
  * touching something is never enough on its own. Wheel and chassis contact does
  * not reach this function at all.
  */
@@ -12,9 +13,11 @@ export function evaluateImpact(region: BodyRegion, speed: number): DamageOutcome
   switch (region) {
     case 'head':
       if (speed >= DAMAGE.head.decapitate) return 'decapitate';
-      return speed >= DAMAGE.head.lethal ? 'lethal' : speed >= DAMAGE.limb.bruise ? 'bruise' : 'none';
+      if (speed >= DAMAGE.head.lethal) return 'lethal';
+      return speed >= DAMAGE.head.knock ? 'knock' : speed >= DAMAGE.limb.bruise ? 'bruise' : 'none';
     case 'torso':
-      return speed >= DAMAGE.torso.lethal ? 'lethal' : speed >= DAMAGE.limb.bruise ? 'bruise' : 'none';
+      if (speed >= DAMAGE.torso.lethal) return 'lethal';
+      return speed >= DAMAGE.torso.knock ? 'knock' : speed >= DAMAGE.limb.bruise ? 'bruise' : 'none';
     case 'limb':
       return speed >= DAMAGE.limb.sever ? 'sever' : speed >= DAMAGE.limb.bruise ? 'bruise' : 'none';
   }

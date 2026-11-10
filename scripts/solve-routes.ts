@@ -18,7 +18,8 @@ function attempt(level: LevelData, steps: RouteStep[], fromCheckpoint: boolean):
   return runRoute(new Simulation(level, createVehicle('motorbike'), { fromCheckpoint }), { steps }, 120);
 }
 
-const passes = (r: RouteResult, wantTag: boolean) => r.status === 'finished' && (!wantTag || r.tag);
+const passes = (r: RouteResult, wantTag: boolean, level: LevelData) =>
+  r.status === 'finished' && (level.onFoot ? r.arrival !== 'dead' : r.arrival === 'riding') && (!wantTag || r.tag);
 
 function perturb(steps: RouteStep[], rand: () => number, scale: number): RouteStep[] {
   return steps.map((s) => {
@@ -34,7 +35,7 @@ function solve(level: LevelData, template: RouteStep[], wantTag: boolean, fromCh
   for (const candidate of [known, template]) {
     if (!candidate) continue;
     const r = attempt(level, candidate, fromCheckpoint);
-    if (passes(r, wantTag)) return { steps: candidate, result: r, tries: 1 };
+    if (passes(r, wantTag, level)) return { steps: candidate, result: r, tries: 1 };
   }
   const rand = mulberry(level.order * 991 + (wantTag ? 7 : 3));
   let best = template;
@@ -45,7 +46,7 @@ function solve(level: LevelData, template: RouteStep[], wantTag: boolean, fromCh
     const scale = 0.25 + (i % 5) * 0.2;
     const trial = perturb(rand() < 0.25 ? template : best, rand, scale);
     const r = attempt(level, trial, fromCheckpoint);
-    if (passes(r, wantTag)) return { steps: trial, result: r, tries: i + 1 };
+    if (passes(r, wantTag, level)) return { steps: trial, result: r, tries: i + 1 };
     const f = fitness(r);
     if (f > bestFit) {
       bestFit = f;

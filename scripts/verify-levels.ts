@@ -21,7 +21,7 @@ const fail = (message: string) => {
 const errors = validateCampaign();
 for (const e of errors) fail(e);
 
-if (LEVELS.length !== 20) fail(`expected 20 levels, found ${LEVELS.length}`);
+if (LEVELS.length !== 24) fail(`expected 24 levels, found ${LEVELS.length}`);
 const changing = LEVELS.filter((l) => l.routeChanging).length;
 if (changing < 12) fail(`only ${changing} levels are route-changing, need 12`);
 
@@ -38,14 +38,15 @@ for (const level of LEVELS) {
   const main = play(level, routes.main);
   const again = play(level, routes.main);
   const tag = play(level, routes.tag);
-  if (main.status !== 'finished') fail(`${level.levelId}: main route did not finish (${main.status} ${main.cause ?? ''} at x=${main.maxX.toFixed(1)})`);
-  if (tag.status !== 'finished' || !tag.tag) fail(`${level.levelId}: tag route failed (${tag.status} ${tag.cause ?? ''}, tag ${tag.tag})`);
+  const arrived = (r: typeof main) => r.status === 'finished' && (level.onFoot ? r.arrival !== 'dead' : r.arrival === 'riding');
+  if (!arrived(main)) fail(`${level.levelId}: main route did not finish (${main.status} ${main.cause ?? ''} at x=${main.maxX.toFixed(1)})`);
+  if (!arrived(tag) || !tag.tag) fail(`${level.levelId}: tag route failed (${tag.status} ${tag.cause ?? ''}, tag ${tag.tag})`);
   if (Math.abs(main.time - again.time) > 1 / 60) fail(`${level.levelId}: replay differs (${main.time} vs ${again.time})`);
 
   let cp = '';
   if (level.checkpoint) {
     const r = routes.checkpoint ? play(level, routes.checkpoint, true) : null;
-    if (!r || r.status !== 'finished') fail(`${level.levelId}: checkpoint route failed`);
+    if (!r || !arrived(r)) fail(`${level.levelId}: checkpoint route failed`);
     cp = r ? `${r.time.toFixed(1)}s` : 'none';
   }
   const medal = level.medals;

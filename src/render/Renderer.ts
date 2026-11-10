@@ -5,7 +5,7 @@ import { backdropFor, type Backdrop } from './background';
 import type { Camera } from './camera';
 import { Effects, type EffectsQuality, type GoreMode } from './effects';
 import { drawMechanism, mechanismReach } from './machineArt';
-import { drawMotorbike, type BikeArtState, type P2 } from './motorbikeArt';
+import { drawMotorbike, type BikeArtState, type Mood, type P2 } from './motorbikeArt';
 import { PALETTES, type RiderPalette } from './palette';
 import { TextureBank } from './textures';
 import { StaticArt, drawCheckpoint, drawDecor, drawFinish, drawKillRegion, drawTag, type View } from './worldArt';
@@ -87,8 +87,31 @@ export class Renderer {
     }
   }
 
+  private tie = 0;
+
   private artState(sim: Simulation, v: MotorbikeController): BikeArtState {
+    const tel = sim.telemetry();
+    const state = v.riderState();
+    const body = v.riderPose();
+    const speed = state === 'riding' ? tel.speed : Math.hypot(body.vx, body.vy);
+    const mood: Mood =
+      state === 'dead'
+        ? 'dead'
+        : state === 'loose'
+          ? speed > 2.5 ? 'scream' : 'panic'
+          : sim.status === 'finished'
+            ? 'thrill'
+            : speed > 17 || Math.abs(tel.angularVelocity) > 3.2
+              ? 'panic'
+              : tel.grounded === 0 || speed > 11
+                ? 'thrill'
+                : 'calm';
+    const want = state === 'dead' ? 0 : Math.min(1.45, speed * 0.085) + Math.sin(sim.worldTime * 17) * Math.min(0.14, speed * 0.012);
+    this.tie += (want - this.tie) * 0.2;
     return {
+      mood,
+      tie: this.tie,
+      mounted: state === 'riding',
       palette: this.settings.palette,
       rider: v.def.rider,
       wheelRadius: v.def.physics.wheel.radius,
@@ -136,12 +159,13 @@ export class Renderer {
     for (const m of sim.mechanisms) {
       const reach = mechanismReach(m);
       if (reach.x1 < view.x0 || reach.x0 > view.x1) continue;
-      drawMechanism(g, sim, m, this.tex, alpha, sim.worldTime);
+      drawMechanism(g, sim, m, this.tex, alpha, sim.worldTime, this.settings.gore);
     }
 
     if (ghost) this.drawGhost(sim, ghost);
     this.drawVehicle(sim, alpha);
 
+    this.effects.reducedMotion = this.settings.reducedMotion;
     this.effects.update(dt, SIM.gravity);
     this.effects.draw(g);
 
@@ -149,8 +173,15 @@ export class Renderer {
       if (d.layer === 'front' && d.x > view.x0 - 3 && d.x < view.x1 + 3) drawDecor(g, d, this.tex);
     }
 
+    this.effects.drawPopups(g);
     if (this.debugPainter) this.debugPainter(g, sim);
     g.setTransform(1, 0, 0, 1, 0, 0);
+    if (this.effects.flash > 0.01) {
+      g.globalAlpha = this.effects.flash;
+      g.fillStyle = '#fff6d6';
+      g.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      g.globalAlpha = 1;
+    }
   }
 
   private drawVehicle(sim: Simulation, alpha: number) {
@@ -191,6 +222,8 @@ export class Renderer {
       detached: new Set(),
       alive: true,
       ghost: true,
+      mood: 'calm',
+      mounted: true,
       gore: 'off',
     });
     g.restore();

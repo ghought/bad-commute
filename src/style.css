@@ -74,6 +74,12 @@ kbd { font-family: var(--mono); font-size: 12px; font-weight: 500; border: 1.5px
 .crash-card { background: var(--paper); border: 3px solid var(--charcoal); box-shadow: 5px 5px 0 var(--blood); padding: 10px 16px 14px; text-align: center; pointer-events: auto; max-width: 92vw; }
 .crash-card h1 { color: var(--blood); font-size: 34px; }
 .crash-card p { margin: 0 0 10px; font-size: 13px; }
+.crash-card .form-no { margin: 0 0 2px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; opacity: .75; }
+.remark { margin: 2px 0 6px; font-size: 13px; }
+.stamp.late { color: var(--blood); }
+.stats .wide { grid-column: 1 / -1; }
+.meter { display: inline-block; width: 46%; height: 16px; border: 2.5px solid var(--charcoal); background: var(--cream); vertical-align: middle; margin-right: 8px; }
+.meter i { display: block; height: 100%; background: var(--blood); }
 
 /* Touch */
 #touch { position: absolute; inset: 0; --touch-scale: 1; --touch-opacity: .72; --size: calc(82px * var(--touch-scale)); }
@@ -87,6 +93,7 @@ kbd { font-family: var(--mono); font-size: 12px; font-weight: 500; border: 1.5px
 }
 .tbtn svg { width: 46%; height: 46%; fill: none; stroke: currentColor; stroke-width: 7; stroke-linecap: square; }
 .tbtn.throttle { width: calc(var(--size) * 1.32); height: calc(var(--size) * 1.32); background: var(--amber); font-size: 30px; }
+.tbtn.eject { width: calc(var(--size) * .74); height: calc(var(--size) * .74); min-width: 48px; min-height: 48px; background: #d62b20; color: #fff6e6; font-size: 15px; border-radius: 50%; align-self: flex-start; }
 .tbtn.held { background: var(--charcoal); color: var(--cream); opacity: 1; }
 .tbtn.throttle.held { background: var(--oxide); }
 
@@ -195,3 +202,13 @@ input[type='range'] { accent-color: var(--oxide); width: 100%; height: 30px; }
 @media (prefers-reduced-motion: reduce) {
   .tag-state.flash { animation: none; }
 }
+
+/* Title */
+#screen[data-screen='title'] {
+  background-color: #ffd9a0;
+  background-image: radial-gradient(rgba(35,32,29,.16) 1.1px, transparent 1.2px), linear-gradient(180deg, #ffc98a 0%, #ffe9c4 58%, #f2b98f 100%);
+  background-size: 9px 9px, auto;
+}
+.logo span { color: #c8221a; text-shadow: 4px 4px 0 var(--charcoal); }
+.btn.hot { background: #d62b20; color: #fff6e6; }
+.btn.hot small { display: block; font-family: var(--mono); font-weight: 500; font-size: 11px; letter-spacing: 0; text-transform: none; opacity: .92; }

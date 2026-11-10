@@ -5,6 +5,7 @@ import { Compactor, Cutter } from './hazards';
 import { Conveyor, Lift, Shutter, Swing } from './movers';
 import { Counterweight, Tilt } from './plates';
 import { Brace, Bridge, Cargo, Latch } from './release';
+import { Fan, Mine, Npc, Prop, Spikes, Spring, Wrecker } from './toys';
 
 export function buildMechanism(data: PrefabData, world: World): Mechanism {
   switch (data.type) {
@@ -32,7 +33,21 @@ export function buildMechanism(data: PrefabData, world: World): Mechanism {
       return new Cutter(data, world);
     case 'compactor':
       return new Compactor(data, world);
+    case 'prop':
+      return new Prop(data, world);
+    case 'mine':
+      return new Mine(data, world);
+    case 'spring':
+      return new Spring(data, world);
+    case 'fan':
+      return new Fan(data, world);
+    case 'wrecker':
+      return new Wrecker(data, world);
+    case 'spikes':
+      return new Spikes(data, world);
+    case 'npc':
+      return new Npc(data, world);
   }
 }
 
-export { Compactor, Cutter, Conveyor, Lift, Shutter, Swing, Counterweight, Tilt, Brace, Bridge, Cargo, Latch };
+export { Compactor, Cutter, Conveyor, Lift, Shutter, Swing, Counterweight, Tilt, Brace, Bridge, Cargo, Latch, Fan, Mine, Npc, Prop, Spikes, Spring, Wrecker };

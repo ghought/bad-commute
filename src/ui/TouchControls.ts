@@ -25,6 +25,7 @@ export class TouchControls {
         </button>
       </div>
       <div class="pad right">
+        <button class="tbtn eject" data-action="eject" tabindex="-1" aria-label="Ejector seat"><span>BAIL</span></button>
         <button class="tbtn" data-action="brake" tabindex="-1" aria-label="Brake and reverse"><span>BRAKE</span></button>
         <button class="tbtn throttle" data-action="throttle" tabindex="-1" aria-label="Throttle"><span>GO</span></button>
       </div>`;

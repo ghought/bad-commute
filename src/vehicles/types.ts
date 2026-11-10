@@ -8,6 +8,8 @@ export interface Pose {
   angle: number;
 }
 
+export type RiderState = 'riding' | 'loose' | 'dead';
+
 export interface BodyPose {
   id: string;
   x: number;
@@ -22,7 +24,7 @@ export interface BodyPose {
 export interface VehicleDefinition<P = unknown, R = unknown> {
   id: string;
   /** Which normalized actions this vehicle responds to. */
-  actions: ReadonlyArray<'throttle' | 'brake' | 'leanBack' | 'leanForward'>;
+  actions: ReadonlyArray<'throttle' | 'brake' | 'leanBack' | 'leanForward' | 'eject'>;
   physics: P;
   rider: R;
   visual: string;
@@ -60,7 +62,21 @@ export interface VehicleController {
   telemetry(): VehicleTelemetry;
   /** Poses of the parts a ghost needs. */
   ghostPose(out: BodyPose[]): void;
+  /** True while the rider is on the vehicle and in control of it. */
   isAlive(): boolean;
+  riderState(): RiderState;
+  /** Where the torso is, which is where the employee is. */
+  riderPose(): { x: number; y: number; vx: number; vy: number };
+  /** Share of the rider still attached, 0 to 1. */
+  integrity(): number;
+  /** Leaves the vehicle alive. `chosen` fires the seat. False if already off. */
+  eject(chosen: boolean): boolean;
+  launch(dvx: number, dvy: number, what: 'bike' | 'rider' | 'all'): void;
+  /** Stops the vehicle dead, as spikes do. */
+  snag(): void;
+  /** Latched request flags the simulation reads and clears. */
+  ejectRequested: boolean;
+  flopped: boolean;
   /** Detaches a limb. Returns false if it is already gone. */
   sever(part: RiderPartId): boolean;
   decapitate(): boolean;

@@ -5,7 +5,9 @@ Read `docs/decision-log.md` before changing core input, violence, platform suppo
 - Physics or course change: run `npm run solve`, then `npm run verify`. Bump `PHYSICS_VERSION` once a build has shipped.
 - The simulation (`src/sim`, `src/mechanisms`, `src/vehicles`) must stay free of DOM, rendering and storage. A test enforces it.
 - Gore settings change only how things look and sound. Never let them reach the simulation.
-- Detached limbs and debris must never touch machinery, triggers or the bike.
+- Detached limbs and debris must never touch machinery, triggers or the bike. Props and bystanders are solid for one knock, then retire to the same rule.
+- A torso over the finish line is an arrival: riding, on foot or dead. Do not make death end the attempt at once.
+- A new player holds throttle and nothing else. The first course must survive that. Keep loose props away from ramps, pads and mines.
 
 ## PCKT Games compatibility
 

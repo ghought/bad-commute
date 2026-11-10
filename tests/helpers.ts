@@ -1,4 +1,5 @@
 import { level } from '../src/levels/authoring';
+import type { VehicleCommand } from '../src/input/actions';
 import type { LevelData } from '../src/levels/schema';
 import { Simulation, type SimOptions } from '../src/sim/Simulation';
 import { createVehicle } from '../src/vehicles';
@@ -24,8 +25,8 @@ export const flat = (over: Partial<LevelData> = {}): LevelData =>
 
 export const makeSim = (l: LevelData, options?: SimOptions) => new Simulation(l, createVehicle('motorbike'), options);
 export const bike = (s: Simulation) => s.vehicle as MotorbikeController;
-export const GO = { throttle: 1, brake: 0, lean: 0 };
-export const IDLE = { throttle: 0, brake: 0, lean: 0 };
+export const GO: VehicleCommand = { throttle: 1, brake: 0, lean: 0 };
+export const IDLE: VehicleCommand = { throttle: 0, brake: 0, lean: 0 };
 
 export function run(s: Simulation, frames: number, cmd = GO) {
   for (let i = 0; i < frames; i++) s.step(cmd);

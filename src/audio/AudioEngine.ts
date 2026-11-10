@@ -214,6 +214,56 @@ export class AudioEngine {
     o.stop(t + decay + 0.02);
   }
 
+  /** A cartoon voice: a buzzy tone pushed through two vowel-shaped filters. */
+  private voice(from: number, to: number, seconds: number, gain: number, vowel: readonly [number, number] = [850, 1300], at?: number) {
+    if (!this.ctx) return;
+    const c = this.ctx;
+    const t = at ?? c.currentTime;
+    const o = c.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(from, t);
+    o.frequency.exponentialRampToValueAtTime(Math.max(to, 40), t + seconds);
+    const wobble = c.createOscillator();
+    wobble.frequency.value = 11;
+    const depth = c.createGain();
+    depth.gain.value = from * 0.035;
+    wobble.connect(depth);
+    depth.connect(o.frequency);
+    const out = c.createGain();
+    out.gain.setValueAtTime(0.0001, t);
+    out.gain.exponentialRampToValueAtTime(gain, t + 0.025);
+    out.gain.setValueAtTime(gain, t + seconds * 0.6);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + seconds);
+    for (const f of vowel) {
+      const band = c.createBiquadFilter();
+      band.type = 'bandpass';
+      band.frequency.value = f;
+      band.Q.value = 6;
+      o.connect(band);
+      band.connect(out);
+    }
+    out.connect(this.sfx);
+    o.start(t);
+    wobble.start(t);
+    o.stop(t + seconds + 0.03);
+    wobble.stop(t + seconds + 0.03);
+  }
+
+  private oof() {
+    this.voice(210, 120, 0.16, 0.5, [520, 900]);
+  }
+
+  private boom() {
+    this.tone(95, 24, 0.7, 0.9, 'sine');
+    this.burst({ gain: 1, decay: 0.75, freq: 900, sweep: 70, type: 'lowpass', q: 1 });
+    this.burst({ gain: 0.5, decay: 0.16, freq: 2600, type: 'bandpass', q: 1 });
+  }
+
+  private boing() {
+    this.tone(150, 620, 0.26, 0.34, 'triangle');
+    this.tone(300, 1240, 0.26, 0.12, 'sine');
+  }
+
   private clunk(level = 1) {
     this.tone(180, 70, 0.14, 0.35 * level, 'square');
     this.burst({ gain: 0.25 * level, decay: 0.08, freq: 1800, type: 'bandpass', q: 2 });
@@ -259,6 +309,53 @@ export class AudioEngine {
         if (e.cause === 'crush') {
           this.tone(70, 28, 0.42, 0.7, 'sine');
           this.gore(1.3, gore);
+        } else if (e.cause === 'pit' || e.cause === 'bounds') {
+          this.voice(700, 260, 1.1, 0.4, [950, 1500]);
+        } else {
+          this.voice(560, 180, 0.34, 0.5, [800, 1250]);
+        }
+        break;
+      case 'eject':
+        if (e.chosen) {
+          this.boing();
+          this.voice(330, 760, 0.55, 0.42, [900, 1600], now + 0.05);
+        } else {
+          this.oof();
+        }
+        break;
+      case 'flop':
+        if (now - this.lastImpact > 0.1) {
+          this.lastImpact = now;
+          this.voice(170, 130, 0.1, 0.2, [480, 820]);
+          this.tone(95, 50, 0.09, 0.2, 'sine');
+        }
+        break;
+      case 'explosion':
+        this.boom();
+        break;
+      case 'boing':
+        this.boing();
+        break;
+      case 'impale':
+        this.gore(1.1, gore);
+        break;
+      case 'npc':
+        if (e.what === 'hit') this.voice(430, 820, 0.3, 0.38, [1000, 1700]);
+        else this.gore(1.1, gore);
+        break;
+      case 'prop':
+        if (e.what === 'burst') {
+          if (e.kind === 'cooler') this.burst({ gain: 0.5, decay: 0.4, freq: 4200, sweep: 900, type: 'highpass' });
+          else if (e.kind === 'crate') {
+            this.burst({ gain: 0.6, decay: 0.2, freq: 700, type: 'bandpass', q: 1 });
+            this.clunk(0.7);
+          } else this.burst({ gain: 0.45, decay: 0.14, freq: 420, type: 'bandpass', q: 0.8 });
+        } else if (e.speed > 2.5 && now - this.lastImpact > 0.06) {
+          this.lastImpact = now;
+          const v = clamp(e.speed / 12, 0.1, 1);
+          if (e.kind === 'cone' || e.kind === 'ball') this.tone(320, 150, 0.09, 0.22 * v, 'triangle');
+          else if (e.kind === 'barrel' || e.kind === 'tnt' || e.kind === 'bin' || e.kind === 'cart') this.tone(240, 90, 0.16, 0.3 * v, 'square');
+          else this.burst({ gain: 0.3 * v, decay: 0.09, freq: 380, type: 'bandpass', q: 0.8 });
         }
         break;
       case 'sparks':
@@ -292,7 +389,15 @@ export class AudioEngine {
         break;
       case 'finish':
         this.clunk(1);
-        this.tone(1760, 1760, 0.32, 0.18, 'triangle', now + 0.08);
+        if (e.arrival === 'dead') {
+          // The sad trombone, for the record.
+          this.tone(294, 277, 0.3, 0.22, 'sawtooth', now + 0.1);
+          this.tone(277, 262, 0.3, 0.22, 'sawtooth', now + 0.42);
+          this.tone(262, 196, 0.75, 0.24, 'sawtooth', now + 0.74);
+        } else {
+          this.tone(1760, 1760, 0.32, 0.18, 'triangle', now + 0.08);
+          if (e.arrival === 'loose') this.tone(2090, 2090, 0.32, 0.14, 'triangle', now + 0.24);
+        }
         break;
       default:
         break;

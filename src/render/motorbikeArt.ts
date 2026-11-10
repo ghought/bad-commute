@@ -21,11 +21,22 @@ export interface BikeArtState {
   ghost: boolean;
   time: number;
   throttle: number;
+  /** What the rider's face is doing. */
+  mood: Mood;
+  /** Tie angle in radians from hanging straight down, blown back by speed. */
+  tie: number;
+  /** False once the rider has left the bike, which is when the briefcase opens. */
+  mounted: boolean;
 }
+
+export type Mood = 'calm' | 'thrill' | 'panic' | 'scream' | 'dead';
+
+const SKIN = '#f0c9a0';
+const SKIN_DARK = '#d9a273';
 
 type Poses = (id: string) => P2 | null;
 
-const LINE = 0.028;
+const LINE = 0.034;
 
 function shape(g: CanvasRenderingContext2D, pts: number[], fill: string, stroke = true) {
   g.beginPath();
@@ -217,24 +228,30 @@ function drawChassis(g: CanvasRenderingContext2D, chassis: P2, rear: P2, front: 
     // Short seat.
     rrect(g, -0.44, 0.15, 0.4, 0.13, 0.05, INK.soot);
 
-    // Utility rack and a wire crate.
-    g.strokeStyle = INK.steel;
-    g.lineWidth = 0.025;
-    g.strokeRect(-0.82, 0.14, 0.33, 0.22);
-    g.beginPath();
-    for (let x = -0.76; x < -0.5; x += 0.07) {
-      g.moveTo(x, 0.14);
-      g.lineTo(x, 0.36);
-    }
-    g.moveTo(-0.82, 0.25);
-    g.lineTo(-0.49, 0.25);
-    g.stroke();
+    // Rack, and the briefcase strapped to it.
     g.strokeStyle = INK.charcoal;
-    g.lineWidth = 0.04;
+    g.lineWidth = 0.05;
     g.beginPath();
-    g.moveTo(-0.82, 0.13);
+    g.moveTo(-0.84, 0.13);
     g.lineTo(-0.44, 0.13);
     g.stroke();
+    if (st.mounted) {
+      rrect(g, -0.84, 0.15, 0.38, 0.25, 0.04, '#8a5a2e');
+      g.fillStyle = '#6f4720';
+      g.fillRect(-0.84, 0.26, 0.38, 0.03);
+      rrect(g, -0.7, 0.4, 0.1, 0.05, 0.02, INK.charcoal);
+      g.fillStyle = '#e8c35a';
+      g.fillRect(-0.78, 0.25, 0.04, 0.05);
+      g.fillRect(-0.56, 0.25, 0.04, 0.05);
+    } else {
+      // Sprung open and empty. The contents are in the air.
+      rrect(g, -0.84, 0.15, 0.38, 0.12, 0.03, '#8a5a2e');
+      g.save();
+      g.translate(-0.84, 0.27);
+      g.rotate(1.9);
+      rrect(g, 0, -0.12, 0.38, 0.12, 0.03, '#6f4720');
+      g.restore();
+    }
 
     // Crooked headlight on a bent bracket.
     g.strokeStyle = INK.charcoal;
@@ -286,7 +303,8 @@ function drawLimb(
     g.fillRect(-w / 2 + 0.01, -len / 2, w * 0.3, len);
     g.globalAlpha = 1;
     if (end === 'glove') {
-      rrect(g, -w * 0.62, -len / 2 - 0.09, w * 1.24, 0.13, 0.04, INK.amberDark);
+      rrect(g, -w * 0.5, -len / 2 + 0.02, w, 0.07, 0.02, '#fff6e6');
+      rrect(g, -w * 0.62, -len / 2 - 0.1, w * 1.24, 0.14, 0.06, SKIN);
     } else if (end === 'boot') {
       shape(g, [-w * 0.6, -len / 2 + 0.03, w * 0.6, -len / 2 + 0.03, w * 0.75, -len / 2 - 0.05, w * 1.5, -len / 2 - 0.08, w * 1.5, -len / 2 - 0.14, -w * 0.62, -len / 2 - 0.14], INK.charcoal);
     }
@@ -299,61 +317,177 @@ function drawTorso(g: CanvasRenderingContext2D, p: P2, st: BikeArtState) {
   const { palette: pal, rider: r } = st;
   const h = r.torsoLength / 2;
   place(g, p, () => {
-    // A boxy jacket that has never fitted anyone.
-    shape(g, [-0.19, h - 0.02, 0.15, h - 0.01, 0.19, h - 0.2, 0.16, -h, -0.17, -h - 0.02, -0.2, -h + 0.3], pal.jacket);
+    // Office shirt, already untucked.
+    shape(g, [-0.19, h - 0.02, 0.15, h - 0.01, 0.2, h - 0.2, 0.17, -h, -0.17, -h - 0.02, -0.2, -h + 0.3], pal.jacket);
     shape(g, [-0.19, h - 0.02, -0.08, h - 0.01, -0.09, -h, -0.17, -h - 0.02, -0.2, -h + 0.3], pal.jacketDark, false);
-    g.fillStyle = pal.stripe;
-    g.fillRect(-0.195, -0.06, 0.37, 0.065);
+    // Belt.
+    g.fillStyle = INK.charcoal;
+    g.fillRect(-0.18, -h, 0.35, 0.05);
+    // Pocket and ID badge on a lanyard.
     g.strokeStyle = INK.charcoal;
-    g.lineWidth = 0.012;
-    g.strokeRect(-0.195, -0.06, 0.37, 0.065);
-    g.lineWidth = 0.02;
-    g.strokeRect(0.02, -0.24, 0.11, 0.11);
+    g.lineWidth = 0.014;
+    g.strokeRect(-0.05, -0.02, 0.1, 0.09);
+    g.fillStyle = '#fff6e6';
+    g.fillRect(0.02, -0.2, 0.1, 0.13);
+    g.strokeRect(0.02, -0.2, 0.1, 0.13);
+    g.fillStyle = pal.stripe;
+    g.fillRect(0.035, -0.12, 0.07, 0.035);
     // Collar.
-    rrect(g, -0.1, h - 0.05, 0.2, 0.08, 0.03, pal.jacketDark);
+    shape(g, [-0.1, h + 0.02, 0.12, h + 0.03, 0.17, h - 0.07, 0.03, h - 0.03, -0.1, h - 0.06], '#fff6e6');
+    // Tie. It reports the airspeed.
+    g.save();
+    g.translate(0.13, h - 0.04);
+    g.rotate(-st.tie);
+    shape(g, [-0.035, 0, 0.035, 0, 0.065, -0.3, 0, -0.39, -0.065, -0.3], '#d5311f');
+    shape(g, [-0.045, 0.02, 0.045, 0.02, 0.035, -0.05, -0.035, -0.05], '#a3231a');
+    g.restore();
     if (st.detached.has('head')) wound(g, 0, h + 0.03, 0.08, st.gore);
   });
 }
 
 function drawHead(g: CanvasRenderingContext2D, p: P2, st: BikeArtState) {
   const pal = st.palette;
+  const mood = st.mood;
   const flash = st.alive && Math.floor(st.time * 3.5) % 2 === 0;
   place(g, p, () => {
-    // Work beacon on top, the rider's one piece of safety equipment.
-    g.fillStyle = INK.charcoal;
-    g.fillRect(-0.05, 0.16, 0.1, 0.05);
+    // Neck stub, then a head a size too big for it.
     g.beginPath();
-    g.arc(0, 0.21, 0.058, 0, Math.PI);
-    g.closePath();
-    g.scale(1, -1);
-    g.scale(1, -1);
-    g.beginPath();
-    g.ellipse(0, 0.22, 0.056, 0.06, 0, 0, Math.PI * 2);
-    g.fillStyle = flash ? INK.amber : INK.amberDark;
+    g.arc(0.01, 0, 0.2, 0, Math.PI * 2);
+    g.fillStyle = SKIN;
     g.fill();
     g.strokeStyle = INK.charcoal;
     g.lineWidth = LINE;
     g.stroke();
+    // Jaw shadow and an ear.
+    g.fillStyle = SKIN_DARK;
+    g.beginPath();
+    g.arc(0.01, 0, 0.19, Math.PI * 1.02, Math.PI * 1.55);
+    g.lineTo(0.01, 0);
+    g.fill();
+    g.beginPath();
+    g.ellipse(-0.06, -0.02, 0.035, 0.05, 0, 0, Math.PI * 2);
+    g.fill();
+    g.lineWidth = 0.018;
+    g.stroke();
+    // Nose.
+    g.beginPath();
+    g.ellipse(0.215, -0.03, 0.04, 0.032, 0, 0, Math.PI * 2);
+    g.fillStyle = SKIN;
+    g.fill();
+    g.stroke();
 
-    // Full-face shell with a square jaw.
-    shape(g, [-0.17, 0.09, -0.11, 0.17, 0.08, 0.175, 0.17, 0.09, 0.2, -0.05, 0.2, -0.16, -0.02, -0.17, -0.17, -0.12], pal.helmet);
-    shape(g, [-0.17, 0.09, -0.11, 0.17, -0.05, 0.17, -0.09, -0.16, -0.17, -0.12], pal.helmetDark, false);
-    // Visor slit.
-    shape(g, [0.03, 0.08, 0.185, 0.08, 0.205, -0.03, 0.03, -0.03], INK.charcoal, false);
-    g.fillStyle = INK.teal;
-    g.globalAlpha = 0.55;
-    g.fillRect(0.06, 0.04, 0.09, 0.02);
-    g.globalAlpha = 1;
-    // Chin vents.
-    g.strokeStyle = INK.charcoal;
-    g.lineWidth = 0.016;
-    for (let x = 0.07; x < 0.18; x += 0.04) {
+    // Eyes.
+    const eyeR = mood === 'calm' ? 0.042 : mood === 'thrill' ? 0.055 : 0.068;
+    const ex = [0.075, 0.165];
+    if (mood === 'dead') {
+      g.strokeStyle = INK.charcoal;
+      g.lineWidth = 0.026;
+      g.lineCap = 'round';
+      for (const x of ex) {
+        g.beginPath();
+        g.moveTo(x - 0.035, 0.075);
+        g.lineTo(x + 0.035, 0.005);
+        g.moveTo(x + 0.035, 0.075);
+        g.lineTo(x - 0.035, 0.005);
+        g.stroke();
+      }
+    } else {
+      for (const x of ex) {
+        g.beginPath();
+        g.arc(x, 0.04, eyeR, 0, Math.PI * 2);
+        g.fillStyle = '#fffdf5';
+        g.fill();
+        g.strokeStyle = INK.charcoal;
+        g.lineWidth = 0.018;
+        g.stroke();
+        g.beginPath();
+        g.arc(x + (mood === 'calm' ? 0.014 : 0.006), 0.04 + (mood === 'scream' ? -0.012 : 0), mood === 'calm' ? 0.02 : 0.016, 0, Math.PI * 2);
+        g.fillStyle = INK.charcoal;
+        g.fill();
+      }
+      // Brows.
+      g.strokeStyle = INK.charcoal;
+      g.lineWidth = 0.024;
+      g.lineCap = 'round';
+      const lift = mood === 'calm' ? 0 : mood === 'thrill' ? 0.02 : 0.045;
       g.beginPath();
-      g.moveTo(x, -0.09);
-      g.lineTo(x, -0.14);
+      g.moveTo(0.03, 0.1 + eyeR * 0.5 + lift * (mood === 'panic' || mood === 'scream' ? 1.6 : 1));
+      g.lineTo(0.11, 0.1 + eyeR * 0.5 + lift * 0.4);
+      g.moveTo(0.13, 0.1 + eyeR * 0.5 + lift * 0.4);
+      g.lineTo(0.2, 0.1 + eyeR * 0.5 + lift);
       g.stroke();
     }
-    if (st.detached.has('head')) wound(g, -0.02, -0.18, 0.075, st.gore);
+
+    // Mouth.
+    g.strokeStyle = INK.charcoal;
+    g.lineWidth = 0.02;
+    if (mood === 'calm') {
+      g.beginPath();
+      g.moveTo(0.07, -0.1);
+      g.lineTo(0.17, -0.095);
+      g.stroke();
+    } else if (mood === 'thrill') {
+      g.beginPath();
+      g.arc(0.12, -0.075, 0.06, Math.PI, Math.PI * 2);
+      g.closePath();
+      g.fillStyle = '#5a1a14';
+      g.fill();
+      g.stroke();
+    } else if (mood === 'panic') {
+      g.beginPath();
+      g.roundRect(0.05, -0.135, 0.14, 0.06, 0.015);
+      g.fillStyle = '#fffdf5';
+      g.fill();
+      g.stroke();
+      g.beginPath();
+      for (let x = 0.085; x < 0.18; x += 0.035) {
+        g.moveTo(x, -0.135);
+        g.lineTo(x, -0.075);
+      }
+      g.stroke();
+    } else {
+      g.beginPath();
+      g.ellipse(0.12, -0.105, 0.06, mood === 'scream' ? 0.075 : 0.045, 0, 0, Math.PI * 2);
+      g.fillStyle = '#5a1a14';
+      g.fill();
+      g.stroke();
+      g.beginPath();
+      g.ellipse(mood === 'dead' ? 0.17 : 0.12, mood === 'dead' ? -0.16 : -0.15, 0.035, 0.028, 0, 0, Math.PI * 2);
+      g.fillStyle = '#e8726b';
+      g.fill();
+      if (mood === 'dead') g.stroke();
+    }
+
+    // Hard hat with a work beacon: the rider's one piece of safety equipment.
+    g.beginPath();
+    g.arc(0, 0.085, 0.215, -0.08, Math.PI + 0.08);
+    g.closePath();
+    g.fillStyle = pal.helmet;
+    g.fill();
+    g.strokeStyle = INK.charcoal;
+    g.lineWidth = LINE;
+    g.stroke();
+    g.beginPath();
+    g.arc(0, 0.085, 0.2, Math.PI * 0.55, Math.PI + 0.06);
+    g.lineTo(0, 0.085);
+    g.fillStyle = pal.helmetDark;
+    g.fill();
+    rrect(g, -0.22, 0.055, 0.56, 0.055, 0.025, pal.helmet);
+    rrect(g, -0.05, 0.285, 0.1, 0.04, 0.01, INK.charcoal);
+    g.beginPath();
+    g.ellipse(0, 0.345, 0.055, 0.055, 0, 0, Math.PI * 2);
+    g.fillStyle = flash ? '#ffb31f' : INK.amberDark;
+    g.fill();
+    g.stroke();
+    if (flash) {
+      g.globalAlpha *= 0.22;
+      g.beginPath();
+      g.arc(0, 0.345, 0.16, 0, Math.PI * 2);
+      g.fillStyle = '#ffb31f';
+      g.fill();
+      g.globalAlpha /= 0.22;
+    }
+    if (st.detached.has('head')) wound(g, -0.02, -0.2, 0.075, st.gore);
   });
 }
 

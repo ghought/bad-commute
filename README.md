@@ -1,10 +1,12 @@
 # Bad Commute
 
-A side-view motorbike game about moving a city's machinery to build your own route. Ride short handcrafted courses. Use the weight of the bike to raise ramps, drop bridges and catch moving platforms. Fail in graphic, physically honest ways, and retry instantly.
+A side-view motorbike game about getting your body to work. Any amount of it counts. Ride short courses through machinery, mines, wrecking balls and office furniture. Use the bike's weight to raise ramps and drop bridges, or fire the ejector seat and crawl the rest. A torso over the finish line is an arrival, with or without the bike, a pulse, or the other limbs.
 
-*The city works. You might not.*
+*Attendance is mandatory. Arriving in one piece is not.*
 
-Mature content: graphic violence and dismemberment, with Reduced and Off settings. "Bad Commute" is a working title and has not been cleared as a brand.
+Controls: W/S throttle and brake, A/D lean, Space ejects, R restarts.
+
+Mature content: graphic violence and dismemberment, of the rider and of bystanders, with Reduced and Off settings. "Bad Commute" is a working title and has not been cleared as a brand.
 
 ## Run it
 
@@ -41,8 +43,8 @@ Levels link as `#/level/rc-03`, so they work on static hosting with no rewrite r
 | `src/config/tuning.ts` | Global tuning and `PHYSICS_VERSION` |
 | `src/vehicles/` | The `VehicleDefinition` and controller contract, and the motorbike |
 | `src/sim/` | The fixed-step simulation, damage model and route autopilot. No DOM |
-| `src/mechanisms/` | Counterweights, latches, lifts, presses and the rest |
-| `src/levels/` | Level schema, validator and the 20 courses as data |
+| `src/mechanisms/` | Counterweights, latches, lifts, presses and the rest. `toys.ts` has props, mines, pads, fans, wrecking balls, spikes and bystanders |
+| `src/levels/` | Level schema, validator and the 24 courses as data. `dressing.ts` adds the shared scenery |
 | `src/render/` | Canvas art, camera, gore and effects. Reads the simulation, never changes it |
 | `src/ui/` | HTML menus, HUD and touch controls |
 | `src/store/` | Local saves and personal-best ghosts |

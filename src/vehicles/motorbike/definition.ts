@@ -86,7 +86,7 @@ export interface MotorbikeRider {
 
 export const MOTORBIKE: VehicleDefinition<MotorbikePhysics, MotorbikeRider> = {
   id: 'motorbike',
-  actions: ['throttle', 'brake', 'leanBack', 'leanForward'],
+  actions: ['throttle', 'brake', 'leanBack', 'leanForward', 'eject'],
   visual: 'motorbike',
   damage: { lethalRegions: ['head', 'torso'] },
   camera: { viewHeightScale: 1 },

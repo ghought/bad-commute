@@ -4,13 +4,16 @@ import { KNOWN_VEHICLES } from '../vehicles';
 import { ROAD_CLOSED } from './data/roadClosed';
 import { LOADING_ZONE } from './data/loadingZone';
 import { ROOF_ACCESS } from './data/roofAccess';
+import { OVERTIME } from './data/overtime';
+import { dress } from './dressing';
 
-export const LEVELS: LevelData[] = [...ROAD_CLOSED, ...LOADING_ZONE, ...ROOF_ACCESS].sort((a, b) => a.order - b.order);
+export const LEVELS: LevelData[] = [...ROAD_CLOSED, ...LOADING_ZONE, ...ROOF_ACCESS, ...OVERTIME].map(dress).sort((a, b) => a.order - b.order);
 
 export const DISTRICTS: Array<{ id: DistrictId; number: string; name: string; note: string }> = [
   { id: 'road-closed', number: '01', name: 'Road Closed', note: 'Roadworks. No one is working.' },
   { id: 'loading-zone', number: '02', name: 'Loading Zone', note: 'Everything here moves. Mostly downward.' },
   { id: 'roof-access', number: '03', name: 'Roof Access', note: 'Authorized personnel only. So, you.' },
+  { id: 'overtime', number: '04', name: 'Overtime', note: 'Unpaid, unsupervised, and open from day one.' },
 ];
 
 export const levelById = (id: string) => LEVELS.find((l) => l.levelId === id) ?? null;

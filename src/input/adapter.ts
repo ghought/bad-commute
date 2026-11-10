@@ -8,6 +8,7 @@ export const DEFAULT_KEYS: KeyMap = {
   brake: ['KeyS', 'ArrowDown'],
   leanBack: ['KeyA', 'ArrowLeft'],
   leanForward: ['KeyD', 'ArrowRight'],
+  eject: ['Space', 'KeyX'],
 };
 
 /**
@@ -42,7 +43,7 @@ export class InputAdapter {
   private rebuild() {
     this.codeToAction.clear();
     for (const name of Object.keys(this.map) as ActionName[]) {
-      for (const code of this.map[name]) this.codeToAction.set(code, name);
+      for (const code of this.map[name] ?? []) this.codeToAction.set(code, name);
     }
   }
 

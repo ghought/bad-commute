@@ -128,7 +128,8 @@ function boot() {
         g.pause('player');
         return;
       }
-      if (e.code === 'Enter' && state === 'crashed') {
+      const down = state === 'playing' && g.sim?.riderState() === 'dead';
+      if (e.code === 'Enter' && (state === 'crashed' || down)) {
         e.preventDefault();
         g.retry();
       }

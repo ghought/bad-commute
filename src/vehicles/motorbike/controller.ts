@@ -12,7 +12,7 @@ import {
 import { approach, clamp, deg, wrapAngle } from '../../core/math';
 import type { VehicleCommand } from '../../input/actions';
 import { CAT, MASK, type BodyRegion, type FixtureTag, type RiderPartId } from '../../sim/filters';
-import type { BodyPose, Pose, VehicleController, VehicleDefinition, VehicleTelemetry } from '../types';
+import type { BodyPose, Pose, RiderState, VehicleController, VehicleDefinition, VehicleTelemetry } from '../types';
 import type { MotorbikePhysics, MotorbikeRider } from './definition';
 
 type LimbKey = 'armN' | 'armF' | 'legN' | 'legF';
@@ -67,7 +67,16 @@ export class MotorbikeController implements VehicleController {
   private neckJoint: Joint | null = null;
   /** Parts no longer attached to the living rider, in the order they came off. */
   detached = new Set<RiderPartId>();
-  private alive = true;
+  private mode: RiderState = 'riding';
+  private get alive() {
+    return this.mode === 'riding';
+  }
+  private flopTimer = 0;
+  /** Set when the loose rider heaves themselves along, for the simulation to report. */
+  flopped = false;
+  private ejectHeld = false;
+  /** Latched by a fresh press, for the simulation to act on. */
+  ejectRequested = false;
   private wheelContacts: number[] = [0, 0];
   private chassisContacts = 0;
   private leanPose = 0;
@@ -292,8 +301,105 @@ export class MotorbikeController implements VehicleController {
     }
   }
 
+  /** True while the rider is on the bike and in charge of it. */
   isAlive() {
-    return this.alive;
+    return this.mode === 'riding';
+  }
+
+  riderState() {
+    return this.mode;
+  }
+
+  riderPose() {
+    const torso = this.parts.get('torso')!;
+    const p = torso.getPosition();
+    const v = torso.getLinearVelocity();
+    return { x: p.x, y: p.y, vx: v.x, vy: v.y };
+  }
+
+  /** Share of the employee still attached to the torso, 0 to 1. */
+  integrity() {
+    let lost = 0;
+    for (const part of this.detached) lost += part === 'head' ? 0.2 : part === 'torso' ? 0.4 : 0.05;
+    return Math.max(0, 1 - lost);
+  }
+
+  private attachedParts() {
+    const out: Body[] = [];
+    for (const [id, body] of this.parts) if (!this.detached.has(id)) out.push(body);
+    return out;
+  }
+
+  private dismount() {
+    this.hipJoint = this.removeJoint(this.hipJoint) as null;
+    for (const limb of this.limbs.values()) limb.end = this.removeJoint(limb.end);
+  }
+
+  /**
+   * Leaves the bike alive. A chosen eject fires the seat; being knocked off
+   * just lets go.
+   */
+  eject(chosen: boolean): boolean {
+    if (this.mode !== 'riding') return false;
+    this.mode = 'loose';
+    this.dismount();
+    this.flopTimer = 0.35;
+    if (chosen) {
+      const up = this.chassis.getWorldVector(Vec2(0, 1));
+      const fwd = this.chassis.getWorldVector(Vec2(1, 0));
+      const base = this.chassis.getLinearVelocity();
+      const vx = base.x + up.x * 6.9 + fwd.x * 1.8;
+      const vy = base.y + Math.max(up.y, 0.35) * 6.9 + fwd.y * 1.8;
+      for (const body of this.attachedParts()) {
+        body.setLinearVelocity(Vec2(vx, vy));
+        body.setAngularVelocity(-2.5);
+      }
+      // The seat pushes back on the bike, a little.
+      const m = this.chassis.getMass();
+      this.chassis.applyLinearImpulse(Vec2(-up.x * m * 1.6, -up.y * m * 1.6), this.chassis.getWorldCenter(), true);
+    }
+    return true;
+  }
+
+  /** Adds the same velocity to every part of the bike, the rider, or both. */
+  launch(dvx: number, dvy: number, what: 'bike' | 'rider' | 'all') {
+    const dv = Vec2(dvx, dvy);
+    const push = (b: Body) => b.setLinearVelocity(Vec2.add(b.getLinearVelocity(), dv));
+    if (what !== 'rider') {
+      push(this.chassis);
+      this.wheels.forEach(push);
+    }
+    if (what !== 'bike') this.attachedParts().forEach(push);
+  }
+
+  private riderTouching() {
+    for (const body of this.attachedParts()) {
+      for (let ce = body.getContactList(); ce; ce = ce.next ?? null) {
+        if (ce.contact.isTouching() && !ce.contact.getFixtureA().isSensor() && !ce.contact.getFixtureB().isSensor()) return true;
+      }
+    }
+    return false;
+  }
+
+  /** Off the bike and still breathing: the lean keys roll you, throttle and brake heave you along. */
+  private applyFlop(dt: number, cmd: VehicleCommand) {
+    const torso = this.parts.get('torso');
+    if (!torso) return;
+    this.flopTimer = Math.max(0, this.flopTimer - dt);
+    if (cmd.lean !== 0) {
+      const rate = torso.getAngularVelocity();
+      if (cmd.lean > 0 ? rate < 7 : rate > -7) torso.applyTorque(cmd.lean * 46, true);
+    }
+    const dir = cmd.brake ? -1 : cmd.throttle ? 1 : 0;
+    if (dir !== 0 && this.flopTimer === 0 && this.riderTouching()) {
+      this.flopTimer = 0.46;
+      this.flopped = true;
+      for (const body of this.attachedParts()) {
+        const v = body.getLinearVelocity();
+        body.setLinearVelocity(Vec2(v.x * 0.5 + dir * 3.1, Math.max(v.y, 0) + 4.4));
+      }
+      torso.setAngularVelocity(torso.getAngularVelocity() - dir * 2.2);
+    }
   }
 
   contactChanged(tag: FixtureTag, delta: 1 | -1) {
@@ -412,6 +518,10 @@ export class MotorbikeController implements VehicleController {
 
   fixedUpdate(dt: number, cmd: VehicleCommand) {
     this.cmd = cmd;
+    const pressed = !!cmd.eject;
+    if (pressed && !this.ejectHeld && this.mode === 'riding') this.ejectRequested = true;
+    this.ejectHeld = pressed;
+    if (this.mode === 'loose') this.applyFlop(dt, cmd);
     const v = this.chassis.getLinearVelocity();
     const fwd = this.chassis.getWorldVector(Vec2(1, 0));
     const forwardSpeed = v.x * fwd.x + v.y * fwd.y;
@@ -474,7 +584,7 @@ export class MotorbikeController implements VehicleController {
       f.setUserData({ k: 'gore' } satisfies FixtureTag);
     }
     // Lost mass moves to the torso, so the living rider handles the same.
-    if (this.alive) this.addBallast(body.getMass());
+    if (this.mode !== 'dead') this.addBallast(body.getMass());
   }
 
   private addBallast(mass: number) {
@@ -526,11 +636,20 @@ export class MotorbikeController implements VehicleController {
     return true;
   }
 
+  /** Caught on spikes: the bike stops where it is. */
+  snag() {
+    this.chassis.setLinearDamping(9);
+    this.chassis.setAngularDamping(9);
+    for (const w of this.wheels) {
+      w.setLinearDamping(9);
+      w.setAngularDamping(9);
+    }
+  }
+
   kill() {
-    if (!this.alive) return;
-    this.alive = false;
-    this.hipJoint = this.removeJoint(this.hipJoint) as null;
-    for (const limb of this.limbs.values()) limb.end = this.removeJoint(limb.end);
+    if (this.mode === 'dead') return;
+    this.mode = 'dead';
+    this.dismount();
   }
 
   settle() {

@@ -13,17 +13,17 @@ describe('level schema', () => {
 
   it('accepts the whole campaign', () => {
     expect(validateCampaign()).toEqual([]);
-    expect(LEVELS).toHaveLength(20);
+    expect(LEVELS).toHaveLength(24);
   });
 
   it('meets the route-changing quota', () => {
     expect(LEVELS.filter((l) => l.routeChanging).length).toBeGreaterThanOrEqual(12);
   });
 
-  it('has three districts of the agreed sizes, in order', () => {
+  it('has four districts of the agreed sizes, in order', () => {
     const counts = LEVELS.reduce<Record<string, number>>((m, l) => ({ ...m, [l.districtId]: (m[l.districtId] ?? 0) + 1 }), {});
-    expect(counts).toEqual({ 'road-closed': 7, 'loading-zone': 7, 'roof-access': 6 });
-    expect(LEVELS.map((l) => l.order)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
+    expect(counts).toEqual({ 'road-closed': 7, 'loading-zone': 7, 'roof-access': 6, overtime: 4 });
+    expect(LEVELS.map((l) => l.order)).toEqual(Array.from({ length: 24 }, (_, i) => i + 1));
   });
 
   it('gives early courses no checkpoint and selected long ones one', () => {

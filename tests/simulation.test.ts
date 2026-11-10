@@ -146,15 +146,18 @@ describe('damage and death', () => {
 
   it('does not tunnel through a cutter at top speed', () => {
     const s = makeSim(flat({ prefabs: [{ type: 'cutter', id: 'saw', x: 150, y: 2.0, r: 0.3 }] }));
-    until(s, () => s.status === 'crashed' || s.telemetry().x > 170);
+    until(s, () => s.riderState() === 'dead' || s.telemetry().x > 170);
     expect(s.telemetry().speed).toBeGreaterThan(0);
-    expect(s.status).toBe('crashed');
+    expect(s.riderState()).toBe('dead');
+    expect(s.deathCause).toBe('cutter');
   });
 
-  it('cannot be undone by crossing the finish', () => {
+  it('cannot be undone by crossing the finish: a body that arrives is recorded as dead', () => {
     const s = makeSim(flat({ finish: { x: 40, y: -5, h: 40 }, prefabs: [{ type: 'cutter', id: 'saw', x: 26, y: 2.0, r: 0.5 }] }));
-    until(s, () => s.telemetry().x > 60, GO, 1200);
-    expect(s.status).toBe('crashed');
+    until(s, () => s.status === 'crashed' || s.status === 'finished', GO, 1500);
+    expect(s.riderState()).toBe('dead');
+    expect(['crashed', 'finished']).toContain(s.status);
+    if (s.status === 'finished') expect(s.arrival).toBe('dead');
   });
 
   it('resolves death first when death and finish share a step', () => {
@@ -193,9 +196,12 @@ describe('damage and death', () => {
     const l = flat({ prefabs: [{ type: 'compactor', id: 'c', x: 0, w: 5, top: 6, floor: 0, rest: 0.1, warn: 0.2, slam: 0.25, hold: 1, rise: 1 }] });
     const s = makeSim(l);
     run(s, 80, { throttle: 0, brake: 1, lean: 0 });
-    expect(s.status).toBe('crashed');
+    expect(s.riderState()).toBe('dead');
     expect(s.deathCause).toBe('crush');
     expect(s.crushed).toBe(true);
+    // The paperwork starts about a second after the press comes down.
+    run(s, 80, IDLE);
+    expect(s.status).toBe('crashed');
     run(s, 300, IDLE);
     expect(s.bodyCount()).toBeLessThan(40);
   });

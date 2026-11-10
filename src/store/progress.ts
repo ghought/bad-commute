@@ -86,6 +86,8 @@ export function migrate(raw: unknown): SaveData {
   out.lastLevel = typeof data.lastLevel === 'string' ? data.lastLevel : null;
   if (data.levels && typeof data.levels === 'object') out.levels = data.levels;
   if (data.settings && typeof data.settings === 'object') out.settings = { ...out.settings, ...data.settings };
+  // Saves from before the ejector seat have no key for it.
+  out.settings.keys = { ...structuredClone(DEFAULT_KEYS), ...out.settings.keys };
   return out;
 }
 
@@ -183,8 +185,10 @@ export class ProgressStore {
     return Object.values(this.data.levels).filter((r) => r.completed).length;
   }
 
-  isUnlocked(level: Pick<LevelData, 'order'>, ordered: Array<Pick<LevelData, 'order' | 'levelId'>>) {
+  isUnlocked(level: Pick<LevelData, 'order'> & { districtId?: string }, ordered: Array<Pick<LevelData, 'order' | 'levelId'> & { districtId?: string }>) {
     if (level.order <= 1) return true;
+    // Overtime is always available: its first course is open from the start.
+    if (level.districtId === 'overtime' && !ordered.some((l) => l.districtId === 'overtime' && l.order < level.order)) return true;
     const prev = ordered.find((l) => l.order === level.order - 1);
     return !prev || !!this.data.levels[prev.levelId]?.completed;
   }

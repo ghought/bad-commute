@@ -4,6 +4,9 @@ import type { Simulation } from '../sim/Simulation';
 import { INK } from './palette';
 import type { TextureBank } from './textures';
 import { worldText } from './worldArt';
+import type { Fan, Mine, Npc, Prop, Spikes, Spring, Wrecker } from '../mechanisms/toys';
+import type { GoreMode } from './effects';
+import { drawFan, drawMine, drawNpc, drawProp, drawSpikes, drawSpring, drawWrecker } from './toyArt';
 
 const tmp = { x: 0, y: 0, a: 0 };
 
@@ -384,7 +387,29 @@ function drawCargo(g: CanvasRenderingContext2D, sim: Simulation, m: Cargo, tex: 
   g.save();
   g.translate(p.x, p.y);
   g.rotate(p.a);
-  if (d.style === 'sign') {
+  if (d.style === 'piano') {
+    outlineRect(g, -d.w / 2, -d.h / 2, d.w, d.h, '#1d1a18', 0.07);
+    g.fillStyle = '#fff6e6';
+    g.fillRect(-d.w / 2 + 0.1, d.h / 2 - 0.34, d.w - 0.2, 0.2);
+    g.fillStyle = '#1d1a18';
+    for (let x = -d.w / 2 + 0.2; x < d.w / 2 - 0.15; x += 0.16) g.fillRect(x, d.h / 2 - 0.26, 0.07, 0.12);
+    g.fillStyle = '#c9a23a';
+    g.fillRect(-0.12, -d.h / 2 + 0.12, 0.24, 0.07);
+  } else if (d.style === 'safe') {
+    outlineRect(g, -d.w / 2, -d.h / 2, d.w, d.h, '#59606b', 0.08);
+    g.strokeStyle = INK.charcoal;
+    g.lineWidth = 0.05;
+    g.strokeRect(-d.w / 2 + 0.14, -d.h / 2 + 0.14, d.w - 0.28, d.h - 0.28);
+    g.beginPath();
+    g.arc(0, 0, Math.min(d.w, d.h) * 0.2, 0, Math.PI * 2);
+    g.fillStyle = '#c9d2d0';
+    g.fill();
+    g.stroke();
+    g.beginPath();
+    g.moveTo(0, 0);
+    g.lineTo(Math.min(d.w, d.h) * 0.16, Math.min(d.w, d.h) * 0.1);
+    g.stroke();
+  } else if (d.style === 'sign') {
     outlineRect(g, -d.w / 2, -d.h / 2, d.w, d.h, INK.cream);
     worldText(g, 'OUT OF SERVICE', 0, -d.h / 4, Math.min(d.h * 0.7, d.w / 8), INK.charcoal);
   } else {
@@ -402,8 +427,22 @@ function drawCargo(g: CanvasRenderingContext2D, sim: Simulation, m: Cargo, tex: 
   g.restore();
 }
 
-export function drawMechanism(g: CanvasRenderingContext2D, sim: Simulation, m: Mechanism, tex: TextureBank, alpha: number, time: number) {
+export function drawMechanism(g: CanvasRenderingContext2D, sim: Simulation, m: Mechanism, tex: TextureBank, alpha: number, time: number, gore: GoreMode = 'full') {
   switch (m.type) {
+    case 'prop':
+      return drawProp(g, sim, m as Prop, alpha);
+    case 'mine':
+      return drawMine(g, m as Mine, time);
+    case 'spring':
+      return drawSpring(g, m as Spring);
+    case 'fan':
+      return drawFan(g, m as Fan, time);
+    case 'wrecker':
+      return drawWrecker(g, sim, m as Wrecker, alpha);
+    case 'spikes':
+      return drawSpikes(g, m as Spikes, gore, sim.deathCause === 'spikes');
+    case 'npc':
+      return drawNpc(g, sim, m as Npc, alpha, gore);
     case 'counterweight':
       return drawCounterweight(g, sim, m as Counterweight, tex, alpha);
     case 'tilt':
@@ -435,6 +474,16 @@ export function drawMechanism(g: CanvasRenderingContext2D, sim: Simulation, m: M
 
 /** World x extent of a mechanism's art, for culling. Machinery is drawn generously. */
 export function mechanismReach(m: Mechanism) {
+  const own = m.reach();
+  if (own) return own;
+  if (m.type === 'prop' || m.type === 'npc') {
+    const p = m.bodies[0].getPosition();
+    return { x0: p.x - 2, x1: p.x + 2 };
+  }
+  if (m.type === 'mine' || m.type === 'spring' || m.type === 'spikes') {
+    const q = (m as unknown as { data: { x: number; w?: number } }).data;
+    return { x0: q.x - (q.w ?? 1) / 2 - 1, x1: q.x + (q.w ?? 1) / 2 + 1 };
+  }
   const d = (m as unknown as { data: Record<string, number> }).data;
   const xs = [d.x, d.ax, d.bx].filter((v) => typeof v === 'number');
   if (m.type === 'cargo') {

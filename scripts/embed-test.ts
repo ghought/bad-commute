@@ -88,13 +88,17 @@ async function startFirstLevel(frame: Frame) {
   await frame.locator('#hud').waitFor({ state: 'visible' });
 }
 
-/** Holds throttle and lean back until the rider loops out. Real input, real frames. */
+/**
+ * Holds throttle and lean back until the rider loops out, then lets go. The report
+ * appears once the rider is dead and still, or alive and has stopped trying.
+ */
 async function crashOut(page: Page, frame: Frame) {
   await page.keyboard.down('KeyW');
   await page.keyboard.down('KeyA');
-  await frame.locator('#crash:not([hidden])').waitFor({ timeout: 20000 });
+  await page.waitForTimeout(2600);
   await page.keyboard.up('KeyA');
   await page.keyboard.up('KeyW');
+  await frame.locator('#crash:not([hidden])').waitFor({ timeout: 25000 });
 }
 
 {
@@ -149,7 +153,7 @@ async function crashOut(page: Page, frame: Frame) {
   m = await msgs(page);
   const end = m.find((x) => x.type === 'ROUND_ENDED');
   check('ROUND_ENDED on a crash, with a numeric score', end && typeof end.payload?.score === 'number', JSON.stringify(end?.payload));
-  check('Failure copy shows immediately', (await frame.locator('.crash-card h1').textContent())?.toLowerCase().includes('shift interrupted'));
+  check('The incident report shows once the rider has stopped', (await frame.locator('.crash-card h1').textContent())?.toLowerCase().includes('did not arrive'));
 
   const before = Date.now();
   await page.keyboard.press('KeyR');

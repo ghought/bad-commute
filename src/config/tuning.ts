@@ -3,7 +3,7 @@
  * PHYSICS_VERSION whenever a change alters how a run plays out: saved times and
  * ghosts from older versions retire from comparison, but completion is kept.
  */
-export const PHYSICS_VERSION = 1;
+export const PHYSICS_VERSION = 2;
 
 export const SIM = {
   hz: 60,
@@ -21,9 +21,16 @@ export const SIM = {
 
 /** Contact-speed thresholds in m/s, by body region. */
 export const DAMAGE = {
-  head: { lethal: 6.2, decapitate: 11 },
-  torso: { lethal: 8.5 },
+  head: { knock: 5.2, lethal: 7.4, decapitate: 11 },
+  torso: { knock: 6.4, lethal: 9.4 },
   limb: { bruise: 3.2, sever: 10.5 },
+  /** A dead body with nowhere to go ends the attempt after this long at rest. */
+  restSeconds: 1.5,
+  restSpeed: 0.7,
+  /** Longest a body is watched after death before the paperwork starts. */
+  deadSeconds: 7,
+  /** A living rider lying still off the bike, with no input, has given up after this long. */
+  idleSeconds: 5,
   /** One body part cannot be hurt twice within this many seconds. */
   contactCooldown: 0.18,
   /** Seconds of aftermath that stay simulated before ragdolls are put to sleep. */
@@ -34,14 +41,14 @@ export const DAMAGE = {
 } as const;
 
 export const BUDGET = {
-  dynamicBodies: 100,
+  dynamicBodies: 140,
   goreBodies: 24,
-  particles: { high: 250, low: 90 },
-  decals: { high: 60, low: 24 },
+  particles: { high: 520, low: 160 },
+  decals: { high: 140, low: 40 },
 } as const;
 
 export const CAMERA = {
-  viewHeight: 11.5,
+  viewHeight: 10.4,
   /** Extra metres of view height at top speed. */
   speedZoom: 2.2,
   lookAheadPerSpeed: 0.34,

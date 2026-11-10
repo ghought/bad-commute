@@ -185,10 +185,97 @@ export interface CargoData {
   path: Array<readonly [number, number, number]>;
   duration: number;
   targets?: string[];
-  style?: 'crate' | 'sign';
+  style?: 'crate' | 'sign' | 'piano' | 'safe';
+}
+
+export type PropKind = 'box' | 'crate' | 'cone' | 'barrel' | 'tnt' | 'cooler' | 'cart' | 'chair' | 'bin' | 'ball';
+
+/** A loose object. It can be shoved, broken, or in one case set off. */
+export interface PropData {
+  type: 'prop';
+  id: string;
+  kind: PropKind;
+  x: number;
+  y: number;
+  angle?: number;
+}
+
+/** Explodes when anything solid touches it. */
+export interface MineData {
+  type: 'mine';
+  id: string;
+  x: number;
+  y: number;
+  radius?: number;
+}
+
+/** A sprung pad that throws whatever lands on it along its normal. */
+export interface SpringData {
+  type: 'spring';
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  /** Launch speed in m/s. */
+  power: number;
+  /** Tilt of the pad, radians. 0 throws straight up, negative throws forward. */
+  angle?: number;
+}
+
+/** A column of moving air. `accel` is in m/s², against a gravity of 16. */
+export interface FanData {
+  type: 'fan';
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  accel: number;
+  /** Direction of the draught, radians from straight up. Positive leans it forward. */
+  angle?: number;
+}
+
+/** A wrecking ball on a fixed swing. */
+export interface WreckerData {
+  type: 'wrecker';
+  id: string;
+  x: number;
+  y: number;
+  rod: number;
+  r: number;
+  amplitude: number;
+  period: number;
+  phase?: number;
+}
+
+/** A strip of spikes. Wheels sink into it; bodies stay on it. */
+export interface SpikesData {
+  type: 'spikes';
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+}
+
+/** A safety inspector, standing where the hazard assessment told them to. */
+export interface NpcData {
+  type: 'npc';
+  id: string;
+  x: number;
+  y: number;
+  /** 1 faces right, -1 faces left. */
+  facing?: number;
+  look?: 'inspector' | 'manager' | 'intern';
 }
 
 export type PrefabData =
+  | PropData
+  | MineData
+  | SpringData
+  | FanData
+  | WreckerData
+  | SpikesData
+  | NpcData
   | CounterweightData
   | TiltData
   | LatchData
@@ -267,12 +354,14 @@ export interface LevelData {
   hints: HintData[];
   medals: { gold: number; silver: number; bronze: number };
   expectedSeconds: readonly [number, number];
+  /** True when the course can only be finished off the bike. The verifier allows for it. */
+  onFoot?: boolean;
   /** True when the course needs a route-changing mechanism, or rewards one. */
   routeChanging: boolean;
   background?: string;
 }
 
-export type DistrictId = 'road-closed' | 'loading-zone' | 'roof-access';
+export type DistrictId = 'road-closed' | 'loading-zone' | 'roof-access' | 'overtime';
 
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const isStr = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
@@ -280,6 +369,13 @@ const isStr = (v: unknown): v is string => typeof v === 'string' && v.length > 0
 type FieldSpec = Record<string, 'num' | 'str' | 'strs' | 'obj' | 'path' | 'num?' | 'str?' | 'strs?' | 'obj?'>;
 
 const PREFAB_FIELDS: Record<PrefabData['type'], FieldSpec> = {
+  prop: { kind: 'str', x: 'num', y: 'num', angle: 'num?' },
+  mine: { x: 'num', y: 'num', radius: 'num?' },
+  spring: { x: 'num', y: 'num', w: 'num', power: 'num', angle: 'num?' },
+  fan: { x: 'num', y: 'num', w: 'num', h: 'num', accel: 'num', angle: 'num?' },
+  wrecker: { x: 'num', y: 'num', rod: 'num', r: 'num', amplitude: 'num', period: 'num', phase: 'num?' },
+  spikes: { x: 'num', y: 'num', w: 'num' },
+  npc: { x: 'num', y: 'num', facing: 'num?', look: 'str?' },
   counterweight: { x: 'num', y: 'num', w: 'num', travel: 'num', ramp: 'obj?', down: 'num?', up: 'num?', hold: 'num?', targets: 'strs?', threshold: 'num?' },
   tilt: { x: 'num', y: 'num', left: 'num', right: 'num', minA: 'num', maxA: 'num', initial: 'num', rate: 'num', returnRate: 'num?', style: 'str?' },
   latch: { x: 'num', y: 'num', targets: 'strs' },
@@ -297,10 +393,10 @@ const PREFAB_FIELDS: Record<PrefabData['type'], FieldSpec> = {
 const LEVEL_FIELDS = new Set([
   'schemaVersion', 'levelId', 'levelVersion', 'districtId', 'order', 'title', 'brief', 'bounds', 'spawn',
   'allowedVehicles', 'clearance', 'finish', 'killRegions', 'terrain', 'solids', 'decor', 'prefabs', 'tag',
-  'checkpoint', 'cameraZones', 'hints', 'medals', 'expectedSeconds', 'routeChanging', 'background',
+  'checkpoint', 'cameraZones', 'hints', 'medals', 'expectedSeconds', 'routeChanging', 'background', 'onFoot',
 ]);
 
-const DISTRICTS: DistrictId[] = ['road-closed', 'loading-zone', 'roof-access'];
+const DISTRICTS: DistrictId[] = ['road-closed', 'loading-zone', 'roof-access', 'overtime'];
 
 /** Returns every problem found. An empty list means the level is sound. */
 export function validateLevel(level: LevelData, knownVehicles: string[] = ['motorbike']): string[] {

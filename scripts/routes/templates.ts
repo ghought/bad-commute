@@ -195,4 +195,38 @@ export const TEMPLATES: Record<string, RouteSet> = {
       { x: 300, v: 10 },
     ],
   },
+  'ot-21': { main: [{ x: 200, v: 11 }], tag: [{ x: 30, v: 12 }, { x: 200, v: 11 }] },
+  'ot-22': {
+    main: [
+      { x: 41, v: 9 },
+      { x: 44, v: 3, hold: { id: 'ball1', gte: 0.63, lte: 0.72 } },
+      { x: 57, v: 16 },
+      { x: 60, v: 3, hold: { id: 'ball2', gte: 0.63, lte: 0.72 } },
+      { x: 200, v: 16 },
+    ],
+    tag: [
+      { x: 38, v: 5 },
+      { x: 44, v: 3, hold: { id: 'ball1', gte: 0.63, lte: 0.72 } },
+      { x: 57, v: 16 },
+      { x: 60, v: 3, hold: { id: 'ball2', gte: 0.63, lte: 0.72 } },
+      { x: 200, v: 16 },
+    ],
+  },
+  'ot-23': { main: [{ x: 200, v: 15 }], tag: [{ x: 200, v: G }] },
+  'ot-24': {
+    main: [
+      { x: 33, v: 9 },
+      { x: 36, v: 3, hold: { id: 'ball', gte: 0.63, lte: 0.72 } },
+      { x: 60, v: 16 },
+      { x: 68.6, v: 4 },
+      { x: 200, v: 2, eject: true },
+    ],
+    tag: [
+      { x: 33, v: 9 },
+      { x: 36, v: 3, hold: { id: 'ball', gte: 0.63, lte: 0.72 } },
+      { x: 60, v: 16 },
+      { x: 68.6, v: 4 },
+      { x: 200, v: 2, eject: true },
+    ],
+  },
 };

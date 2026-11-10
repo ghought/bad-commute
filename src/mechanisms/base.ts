@@ -20,6 +20,8 @@ export interface MechContext {
   bike(): VehicleTelemetry;
   send(id: string, on: boolean): void;
   emit(e: SimEvent): void;
+  /** Queues a blast. It goes off after `delay` seconds, never inside a contact callback. */
+  explode(x: number, y: number, radius: number, delay?: number): void;
 }
 
 /** Previous and current pose of one body, for render interpolation. */
@@ -117,6 +119,14 @@ export abstract class Mechanism {
   restore(_state: MechanismRestore): void {}
 
   crushZone(): CrushZone | null {
+    return null;
+  }
+
+  /** A blast went off `dist` metres away, inside its radius. */
+  blasted(_dist: number, _ctx: MechContext): void {}
+
+  /** Horizontal span this can reach, for culling. Null uses the bodies. */
+  reach(): { x0: number; x1: number } | null {
     return null;
   }
 
